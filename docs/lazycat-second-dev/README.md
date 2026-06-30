@@ -43,10 +43,11 @@ Playwright 冒烟 5/5                  LPK build + install + 网盘 E2E
 
 ## 官方 / 技能参考
 
-- 懒猫移植流水线：`lazycat-porting` skill
-- 网盘 + inject：`lazycat-lpk-netdisk` skill
-- 免密登录：开发者手册 `06-专题/01-免密登录.md`
-- 文件选择器：`06-专题/02-自动拦截文件选择器.md`
+- **通用手册正文**：[`docs/lazycat/开发者手册.md`](../lazycat/开发者手册.md)（AI 经 `porting-handbook.md` 索引按需 §）
+- 懒猫移植流水线：`.cursor/skills/lazycat-porting/SKILL.md`
+- 提审清单：`.cursor/skills/lazycat-porting/publish-checklist.md`
+- 网盘 + inject：`.cursor/skills/lazycat-lpk-netdisk/SKILL.md`
+- 免密登录：`.cursor/skills/lazycat-auth-integration/SKILL.md`（或官网 `06-专题/01-免密登录.md`）
 
 ## 本地跑自动化
 
