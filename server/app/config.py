@@ -1,0 +1,199 @@
+from functools import lru_cache
+import os
+
+from pydantic import BaseModel, Field
+
+
+def _first_env(*names: str, default: str | None = None) -> str | None:
+    for name in names:
+        value = os.getenv(name)
+        if value:
+            return value
+    return default
+
+
+DEPRECATED_MIMO_MODELS = frozenset(
+    {
+        "mimo-v2-pro",
+        "mimo-v2-omni",
+        "mimo-v2-flash",
+        "mimo-v2-tts",
+    }
+)
+
+
+class Settings(BaseModel):
+    agora_app_id: str = Field(min_length=1)
+    agora_app_certificate: str = Field(min_length=1)
+    agora_area_code: str = "global"
+    vision_provider: str = "mimo"
+    mimo_api_key: str | None = None
+    mimo_base_url: str = "https://api.xiaomimimo.com/v1"
+    mimo_vision_model: str = "mimo-v2.5"
+    mimo_tts_model: str = "mimo-v2.5-tts"
+    mimo_tts_voice: str = "冰糖"
+    openai_api_key: str | None = None
+    openai_vision_model: str = "gpt-5.4-mini"
+    openai_tts_model: str = "gpt-4o-mini-tts"
+    openai_tts_voice: str = "alloy"
+    tts_provider: str = "mimo"
+    elevenlabs_api_key: str | None = None
+    elevenlabs_voice_id: str | None = None
+    elevenlabs_model: str = "eleven_flash_v2_5"
+    elevenlabs_output_format: str = "pcm_24000"
+    elevenlabs_stability: float = 0.35
+    elevenlabs_similarity_boost: float = 0.8
+    elevenlabs_style: float = 0.35
+    elevenlabs_speed: float = 1.12
+    elevenlabs_use_speaker_boost: bool = True
+    elevenlabs_streaming: bool = True
+    fish_audio_api_key: str | None = None
+    fish_audio_voice_id: str | None = None
+    fish_audio_model: str = "s2-pro"
+    fish_audio_format: str = "pcm"
+    fish_audio_sample_rate: int | None = None
+    fish_audio_latency: str = "balanced"
+    fish_audio_chunk_length: int = 150
+    fish_audio_speed: float = 1.0
+    fish_audio_volume: float = 0.0
+    fish_audio_normalize_loudness: bool = True
+    agent_uid: int = 123456
+    match_feed_uid: int = 234567
+    token_expire_seconds: int = 3600
+    commentary_interval_seconds: float = 4.0
+    commentary_dev_test_feed: bool = False
+    commentary_frame_sample_seconds: float = 0.55
+    commentary_context_frames: int = 4
+    commentary_frame_width: int = 960
+    commentary_frame_jpeg_quality: int = 72
+    commentary_audio_sample_rate: int = 24000
+    commentary_audio_consume_interval_ms: int = 60
+    commentary_audio_backlog_limit_ms: int = 2500
+    commentary_audio_drain_target_ms: int = 250
+    commentary_audio_drain_timeout_ms: int = 8000
+    commentary_audio_keepalive: bool = False
+    live_session_max_seconds: float = 900.0
+    viewer_heartbeat_timeout_seconds: float = 45.0
+    backend_api_secret: str | None = None
+    log_dir: str = "./agora_rtc_log"
+
+
+@lru_cache
+def get_settings() -> Settings:
+    app_id = _first_env("AGORA_APP_ID", "NEXT_PUBLIC_AGORA_APP_ID")
+    app_certificate = _first_env("AGORA_APP_CERTIFICATE", "NEXT_AGORA_APP_CERTIFICATE")
+    vision_provider = os.getenv("VISION_PROVIDER", "mimo").lower().replace("-", "_")
+    tts_provider = os.getenv("TTS_PROVIDER", "mimo").lower().replace("-", "_")
+    mimo_vision_model = os.getenv("MIMO_VISION_MODEL", "mimo-v2.5")
+    mimo_tts_model = os.getenv("MIMO_TTS_MODEL", "mimo-v2.5-tts")
+    elevenlabs_output_format = os.getenv("ELEVENLABS_OUTPUT_FORMAT", "pcm_24000")
+    commentary_audio_sample_rate = int(os.getenv("COMMENTARY_AUDIO_SAMPLE_RATE", "24000"))
+    commentary_audio_safe_mode = (
+        os.getenv("COMMENTARY_AUDIO_AGORA_SAFE_MODE", "false").lower()
+        not in {"0", "false", "no"}
+    )
+    if tts_provider == "elevenlabs" and commentary_audio_safe_mode:
+        elevenlabs_output_format = "pcm_16000"
+        commentary_audio_sample_rate = 16000
+    if not app_id or not app_certificate:
+        raise RuntimeError(
+            "Missing Agora credentials. Set AGORA_APP_ID and AGORA_APP_CERTIFICATE."
+        )
+
+    if vision_provider == "mimo" and mimo_vision_model in DEPRECATED_MIMO_MODELS:
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "MIMO_VISION_MODEL=%s is deprecated after 2026-06-30; use mimo-v2.5",
+            mimo_vision_model,
+        )
+    if tts_provider == "mimo" and mimo_tts_model in DEPRECATED_MIMO_MODELS:
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "MIMO_TTS_MODEL=%s is deprecated after 2026-06-30; use mimo-v2.5-tts",
+            mimo_tts_model,
+        )
+
+    return Settings(
+        agora_app_id=app_id,
+        agora_app_certificate=app_certificate,
+        agora_area_code=os.getenv("AGORA_AREA_CODE", "global").lower(),
+        vision_provider=vision_provider,
+        mimo_api_key=_first_env("MIMO_API_KEY", "XIAOMI_MIMO_API_KEY"),
+        mimo_base_url=os.getenv("MIMO_BASE_URL", "https://api.xiaomimimo.com/v1").rstrip(
+            "/"
+        ),
+        mimo_vision_model=mimo_vision_model,
+        mimo_tts_model=mimo_tts_model,
+        mimo_tts_voice=os.getenv("MIMO_TTS_VOICE", "冰糖"),
+        openai_api_key=_first_env(
+            "OPENAI_API_KEY",
+            "NEXT_OPENAI_API_KEY",
+            "NEXT_LLM_API_KEY",
+        ),
+        openai_vision_model=os.getenv("OPENAI_VISION_MODEL", "gpt-5.4-mini"),
+        openai_tts_model=os.getenv("OPENAI_TTS_MODEL", "gpt-4o-mini-tts"),
+        openai_tts_voice=os.getenv("OPENAI_TTS_VOICE", "alloy"),
+        tts_provider=tts_provider,
+        elevenlabs_api_key=os.getenv("ELEVENLABS_API_KEY"),
+        elevenlabs_voice_id=os.getenv("ELEVENLABS_VOICE_ID"),
+        elevenlabs_model=os.getenv("ELEVENLABS_MODEL", "eleven_flash_v2_5"),
+        elevenlabs_output_format=elevenlabs_output_format,
+        elevenlabs_stability=float(os.getenv("ELEVENLABS_STABILITY", "0.35")),
+        elevenlabs_similarity_boost=float(os.getenv("ELEVENLABS_SIMILARITY_BOOST", "0.8")),
+        elevenlabs_style=float(os.getenv("ELEVENLABS_STYLE", "0.35")),
+        elevenlabs_speed=float(os.getenv("ELEVENLABS_SPEED", "1.12")),
+        elevenlabs_use_speaker_boost=os.getenv("ELEVENLABS_USE_SPEAKER_BOOST", "true").lower()
+        not in {"0", "false", "no"},
+        elevenlabs_streaming=os.getenv("ELEVENLABS_STREAMING", "true").lower()
+        not in {"0", "false", "no"},
+        fish_audio_api_key=os.getenv("FISH_AUDIO_API_KEY"),
+        fish_audio_voice_id=os.getenv("FISH_AUDIO_VOICE_ID"),
+        fish_audio_model=os.getenv("FISH_AUDIO_MODEL", "s2-pro"),
+        fish_audio_format=os.getenv("FISH_AUDIO_FORMAT", "pcm").lower(),
+        fish_audio_sample_rate=int(
+            os.getenv("FISH_AUDIO_SAMPLE_RATE", str(commentary_audio_sample_rate))
+        ),
+        fish_audio_latency=os.getenv("FISH_AUDIO_LATENCY", "balanced"),
+        fish_audio_chunk_length=int(os.getenv("FISH_AUDIO_CHUNK_LENGTH", "150")),
+        fish_audio_speed=float(os.getenv("FISH_AUDIO_SPEED", "1.0")),
+        fish_audio_volume=float(os.getenv("FISH_AUDIO_VOLUME", "0")),
+        fish_audio_normalize_loudness=os.getenv(
+            "FISH_AUDIO_NORMALIZE_LOUDNESS", "true"
+        ).lower()
+        not in {"0", "false", "no"},
+        agent_uid=int(os.getenv("AGENT_UID", os.getenv("NEXT_PUBLIC_AGENT_UID", "123456"))),
+        match_feed_uid=int(os.getenv("MATCH_FEED_UID", "234567")),
+        token_expire_seconds=int(os.getenv("AGORA_TOKEN_EXPIRE_SECONDS", "3600")),
+        commentary_interval_seconds=float(os.getenv("COMMENTARY_INTERVAL_SECONDS", "4.0")),
+        commentary_dev_test_feed=os.getenv("COMMENTARY_DEV_TEST_FEED", "false").lower()
+        in {"1", "true", "yes"},
+        commentary_frame_sample_seconds=float(os.getenv("COMMENTARY_FRAME_SAMPLE_SECONDS", "0.55")),
+        commentary_context_frames=int(os.getenv("COMMENTARY_CONTEXT_FRAMES", "4")),
+        commentary_frame_width=int(os.getenv("COMMENTARY_FRAME_WIDTH", "960")),
+        commentary_frame_jpeg_quality=int(os.getenv("COMMENTARY_FRAME_JPEG_QUALITY", "72")),
+        commentary_audio_sample_rate=commentary_audio_sample_rate,
+        commentary_audio_consume_interval_ms=int(
+            os.getenv("COMMENTARY_AUDIO_CONSUME_INTERVAL_MS", "60")
+        ),
+        commentary_audio_backlog_limit_ms=int(
+            os.getenv("COMMENTARY_AUDIO_BACKLOG_LIMIT_MS", "2500")
+        ),
+        commentary_audio_drain_target_ms=int(
+            os.getenv("COMMENTARY_AUDIO_DRAIN_TARGET_MS", "250")
+        ),
+        commentary_audio_drain_timeout_ms=int(
+            os.getenv("COMMENTARY_AUDIO_DRAIN_TIMEOUT_MS", "8000")
+        ),
+        commentary_audio_keepalive=os.getenv(
+            "COMMENTARY_AUDIO_KEEPALIVE", "false"
+        ).lower()
+        not in {"0", "false", "no"},
+        live_session_max_seconds=float(os.getenv("LIVE_SESSION_MAX_SECONDS", "900")),
+        viewer_heartbeat_timeout_seconds=float(
+            os.getenv("VIEWER_HEARTBEAT_TIMEOUT_SECONDS", "45")
+        ),
+        backend_api_secret=os.getenv("BACKEND_API_SECRET"),
+        log_dir=os.getenv("AGORA_RTC_LOG_DIR", "./agora_rtc_log"),
+    )

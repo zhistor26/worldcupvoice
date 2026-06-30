@@ -1,0 +1,71 @@
+lzc-sdk-version: "0.1"
+
+application:
+  subdomain: worldcupvoice
+  routes:
+    - /=http://web:3000
+
+  injects:
+    - id: passwordless-entry
+      on: browser
+      when:
+        - /*
+      do:
+        - src: builtin://simple-inject-password
+          params:
+            username: ""
+            password: ""
+
+    - id: netdisk-file-picker
+      on: browser
+      when:
+        - /*
+      do:
+        - src: file:///lzcapp/pkg/content/lazycat-injects/lzc-file-chooser-inject.js
+          params:
+            diskRoot: /_lzc/files/home
+            fallbackMime: application/octet-stream
+            locale: auto
+            hooks:
+              fileInput: true
+              fileSystemAccess: true
+
+services:
+  agent:
+    image: embed:agent
+    environment:
+      AGORA_APP_ID: "{{ params.agora_app_id }}"
+      AGORA_APP_CERTIFICATE: "{{ params.agora_app_certificate }}"
+      MIMO_API_KEY: "{{ params.mimo_api_key }}"
+      BACKEND_API_SECRET: "{{ params.backend_api_secret }}"
+      VISION_PROVIDER: "{{ params.vision_provider }}"
+      TTS_PROVIDER: "{{ params.tts_provider }}"
+      MATCH_FEED_UID: "234567"
+      AGENT_UID: "123456"
+      BACKEND_CORS_ALLOW_ORIGINS: "*"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+
+  web:
+    image: embed:web
+    environment:
+      AGENT_BACKEND_URL: http://agent:8000
+      NEXT_PUBLIC_AGORA_APP_ID: "{{ params.agora_app_id }}"
+      NEXT_AGORA_APP_CERTIFICATE: "{{ params.agora_app_certificate }}"
+      BACKEND_API_SECRET: "{{ params.backend_api_secret }}"
+      NEXT_PUBLIC_LAZYCAT_DEPLOYED: "true"
+      NEXT_PUBLIC_REQUIRE_ACCESS_PASSWORD: "false"
+      NEXT_PUBLIC_LIVE_CHANNEL_NAME: worldcup-live
+      NEXT_PUBLIC_AGENT_UID: "123456"
+      NEXT_PUBLIC_MATCH_FEED_UID: "234567"
+      LAZYCAT_DEPLOYED: "true"
+    depends_on:
+      - agent

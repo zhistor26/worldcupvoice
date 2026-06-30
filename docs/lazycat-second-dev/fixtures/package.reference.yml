@@ -1,0 +1,24 @@
+# 参考：package.yml（目标态）
+
+package: org.worldcupvoice.app
+version: 0.2.0
+
+name:
+  en: WorldCupVoice AI Commentator
+  zh: 世界杯 AI 解说
+
+description:
+  en: Real-time AI football commentary with LazyCat Drive video import.
+  zh: 实时 AI 足球解说，支持从懒猫网盘选择比赛录像。
+
+locales:
+  - zh
+  - en
+
+permissions:
+  required:
+    - net.internet
+    - document.read
+    - media.read
+  optional:
+    - document.write

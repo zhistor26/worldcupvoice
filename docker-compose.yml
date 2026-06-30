@@ -1,0 +1,45 @@
+services:
+  agent:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - server/.env.local
+    environment:
+      BACKEND_CORS_ALLOW_ORIGINS: http://localhost:3000
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_AGORA_APP_ID: ${NEXT_PUBLIC_AGORA_APP_ID}
+        NEXT_AGORA_APP_CERTIFICATE: ${NEXT_AGORA_APP_CERTIFICATE}
+        NEXT_PUBLIC_LAZYCAT_DEPLOYED: ${NEXT_PUBLIC_LAZYCAT_DEPLOYED:-false}
+        NEXT_PUBLIC_REQUIRE_ACCESS_PASSWORD: ${NEXT_PUBLIC_REQUIRE_ACCESS_PASSWORD:-true}
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.local
+    environment:
+      AGENT_BACKEND_URL: http://agent:8000
+      BACKEND_API_SECRET: ${BACKEND_API_SECRET}
+      ACCESS_PASSWORD: ${ACCESS_PASSWORD}
+      NEXT_AGORA_APP_CERTIFICATE: ${NEXT_AGORA_APP_CERTIFICATE}
+    depends_on:
+      agent:
+        condition: service_healthy

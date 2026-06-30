@@ -1,0 +1,48 @@
+# 参考：lzc-deploy-params.yml（目标态）
+# 占位符仅用于契约测试，非真实密钥。
+
+params:
+  - id: mimo_api_key
+    type: secret
+    name: MiMo API Key
+    description: 小米 MiMo 平台 API Key，用于视觉解说与语音合成
+    required: true
+
+  - id: agora_app_id
+    type: string
+    name: Agora App ID
+    description: Agora 实时音视频项目 App ID
+    required: true
+
+  - id: agora_app_certificate
+    type: secret
+    name: Agora App Certificate
+    description: Agora 项目证书（启用证书鉴权时必填）
+    required: true
+
+  - id: backend_api_secret
+    type: secret
+    name: Backend API Secret
+    description: 前后端 session API 共享密钥
+    default_value: "$random(len=32)"
+    required: true
+
+  - id: vision_provider
+    type: string
+    name: Vision Provider
+    description: "视觉模型：mimo（默认）或 openai"
+    default_value: mimo
+    required: false
+
+  - id: tts_provider
+    type: string
+    name: TTS Provider
+    description: "语音合成：mimo（默认）、fish_audio、elevenlabs、openai"
+    default_value: mimo
+    required: false
+
+  - id: access_password
+    type: secret
+    name: Dev Access Password
+    description: 仅本地调试进门密码；懒猫部署应留空并配合 LAZYCAT_DEPLOYED
+    required: false

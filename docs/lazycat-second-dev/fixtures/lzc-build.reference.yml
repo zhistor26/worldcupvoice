@@ -1,0 +1,15 @@
+# 参考：lzc-build.yml（目标态 — M1 实装时复制到仓库根目录）
+# 契约测试校验本文件结构，非运行时配置。
+
+package: org.worldcupvoice.app
+version: 0.2.0
+name: WorldCupVoice AI 解说
+description: 世界杯风格实时 AI 足球解说，支持网盘录像与 MiMo 语音
+
+contentdir: ./content
+
+images:
+  - name: web
+    dockerfile: ./Dockerfile
+  - name: agent
+    dockerfile: ./server/Dockerfile

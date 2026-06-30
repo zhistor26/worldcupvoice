@@ -1,0 +1,15 @@
+manifest: lzc-manifest.yml
+contentdir: ./content
+icon: ./icon.png
+pkgout: ./
+
+images:
+  web:
+    dockerfile: Dockerfile
+    build_args:
+      NEXT_PUBLIC_AGORA_APP_ID: "{{ params.agora_app_id }}"
+      NEXT_AGORA_APP_CERTIFICATE: "{{ params.agora_app_certificate }}"
+      NEXT_PUBLIC_LAZYCAT_DEPLOYED: "true"
+      NEXT_PUBLIC_REQUIRE_ACCESS_PASSWORD: "false"
+  agent:
+    dockerfile: server/Dockerfile

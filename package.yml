@@ -1,0 +1,26 @@
+package: org.worldcupvoice.app
+version: 0.2.0
+
+name:
+  zh-CN: 世界杯 AI 解说
+  en-US: WorldCupVoice AI Commentator
+
+description:
+  zh-CN: 实时 AI 足球解说。支持从懒猫网盘选择比赛录像，小米 MiMo 视觉与语音默认栈。
+  en-US: Real-time AI football commentary with LazyCat Drive MP4 import and MiMo AI stack.
+
+locales:
+  - zh-CN
+  - en-US
+
+author: WorldCupVoice
+license: MIT
+homepage: https://github.com/AshRW24/worldcupvoice
+
+permissions:
+  required:
+    - net.internet
+    - document.read
+    - media.read
+  optional:
+    - document.write
