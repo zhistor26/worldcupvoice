@@ -1,15 +1,25 @@
-# 参考：lzc-build.yml（目标态 — M1 实装时复制到仓库根目录）
-# 契约测试校验本文件结构，非运行时配置。
+# 参考：lzc-build.yml（目标态 v0.2）
+# M1 本地 fat build 可含 images；M4 提审版应移除 images 段，见 IMPLEMENTATION_PLAN §7.2
 
-package: org.worldcupvoice.app
-version: 0.2.0
-name: WorldCupVoice AI 解说
-description: 世界杯风格实时 AI 足球解说，支持网盘录像与 MiMo 语音
-
+manifest: lzc-manifest.yml
 contentdir: ./content
+icon: ./icon.png
+pkgout: ./
 
 images:
-  - name: web
-    dockerfile: ./Dockerfile
-  - name: agent
-    dockerfile: ./server/Dockerfile
+  web:
+    dockerfile: Dockerfile
+    build_args:
+      NEXT_PUBLIC_AGORA_APP_ID: "{{ params.agora_app_id }}"
+      NEXT_AGORA_APP_CERTIFICATE: "{{ params.agora_app_certificate }}"
+      NEXT_PUBLIC_LAZYCAT_DEPLOYED: "true"
+      NEXT_PUBLIC_REQUIRE_ACCESS_PASSWORD: "false"
+  agent:
+    dockerfile: server/Dockerfile
+
+# M4 提审 thin release 示例（无 images）：
+# manifest: lzc-manifest.yml
+# contentdir: ./content
+# icon: ./icon.png
+# pkgout: ./
+# （镜像已 push registry，manifest services.image 指向 registry.lazycat.cloud/...）

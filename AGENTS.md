@@ -54,6 +54,7 @@ worldcupvoice/
 | **AI**（执行任务） | 移植流水线 | `.cursor/skills/lazycat-porting/SKILL.md` |
 | **AI**（查章节） | 手册索引 → 按需 § | `porting-handbook.md` → `docs/lazycat/开发者手册.md` |
 | **AI + 人**（本项目） | WorldCupVoice 专题 | `docs/lazycat-second-dev/` |
+| **AI**（测什么/怎么测） | 金字塔自动化 | `docs/lazycat-second-dev/PYRAMID_TESTING.md` |
 
 **禁止** AI 同时全文加载 SKILL、索引与整本手册。
 
@@ -102,10 +103,10 @@ pnpm install && pnpm dev
 cd server && pip install -r requirements.txt -r requirements-dev.txt
 python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
-# 单元 / E2E
-pnpm test
+# 单元 / E2E（分层见 docs/lazycat-second-dev/PYRAMID_TESTING.md）
+pnpm test:lazycat
+pnpm test:e2e:run
 ./scripts/verify-ai-pipeline.sh
-./scripts/test-lazycat-contract.sh
 
 # 懒猫发布包（提审前必走）
 lzc-cli project release
