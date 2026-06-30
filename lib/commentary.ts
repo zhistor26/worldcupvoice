@@ -1,21 +1,15 @@
 import type { CommentaryMatch, MatchContext } from '@/types/conversation';
-import argentinaFrance2022Final from '@/data/matches/argentina-france-2022-final.json';
+import worldcupDemo2026 from '@/data/matches/worldcup-demo-2026.json';
 
 // ─── Match context ────────────────────────────────────────────────────────────
-// Each match is one JSON file in `data/matches/`. This metadata is sent to the
-// AI as a prompt so it can identify teams/players and call the action in
-// context — it is NOT shown to viewers.
+// Each match is one JSON file in `data/matches/`. Metadata is sent to the AI as
+// a prompt (not shown verbatim to viewers). The booth uses COMMENTARY_MATCHES[0].
 //
-// ⚠️ FILL THIS IN FOR YOUR OWN VIDEO. The example below describes our test clip
-// (the 2022 World Cup final). If you stream a different match, copy
-// `data/matches/_template.json`, edit it, import it here, and list it FIRST —
-// the booth uses COMMENTARY_MATCHES[0]. See `data/matches/README.md`.
-//
-// JSON imports widen `role`/`position` to `string`, so we assert the shape back
-// to CommentaryMatch (the fields are documented in the template).
+// Default: generic 2026 demo aligned with `samples/worldcupvoice-demo-kick.mp4`.
+// For a real match clip, copy `data/matches/_template.json`, fill it in, import
+// here, and list YOUR match first. See `data/matches/README.md`.
 export const COMMENTARY_MATCHES: CommentaryMatch[] = [
-  argentinaFrance2022Final as unknown as CommentaryMatch,
-  // 👉 Add your own match: import its JSON above and put it first.
+  worldcupDemo2026 as unknown as CommentaryMatch,
 ];
 
 export function toMatchContext(match: CommentaryMatch): MatchContext {

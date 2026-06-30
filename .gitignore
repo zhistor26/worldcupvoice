@@ -157,3 +157,11 @@ samples/*.mp4
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Local deploy secrets (never commit)
+lzc-build.deploy.local.yml
+lzc-manifest.deploy.local.yml
+Dockerfile.deploy.local
+.lzc-cli-cache/
+*.lpk
+package-lock.json

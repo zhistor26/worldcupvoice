@@ -1,17 +1,17 @@
 package: org.worldcupvoice.app
 version: 0.2.0
 
-name:
-  zh-CN: 世界杯 AI 解说
-  en-US: WorldCupVoice AI Commentator
+name: 世界杯 AI 解说
 
-description:
-  zh-CN: 实时 AI 足球解说。支持从懒猫网盘选择比赛录像，小米 MiMo 视觉与语音默认栈。
-  en-US: Real-time AI football commentary with LazyCat Drive MP4 import and MiMo AI stack.
+description: 实时 AI 足球解说。支持从懒猫网盘选择比赛录像，小米 MiMo 视觉与语音默认栈。
 
 locales:
-  - zh-CN
-  - en-US
+  zh:
+    name: 世界杯 AI 解说
+    description: 实时 AI 足球解说。支持从懒猫网盘选择比赛录像，小米 MiMo 视觉与语音默认栈。
+  en:
+    name: WorldCupVoice AI Commentator
+    description: Real-time AI football commentary with LazyCat Drive MP4 import and MiMo AI stack.
 
 author: WorldCupVoice
 license: MIT

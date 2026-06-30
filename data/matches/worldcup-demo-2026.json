@@ -1,0 +1,43 @@
+{
+  "id": "worldcup-demo-2026",
+  "sport": "football",
+  "title": "WorldCupVoice 踢球演示",
+  "competition": "WorldCupVoice 足球演示（非正式比赛）",
+  "venue": "训练场",
+  "homeTeam": "Demo Red",
+  "awayTeam": "Demo Blue",
+  "gameDate": "2026-06-30",
+  "localTipTime": "演示时段",
+  "finalScore": "无固定比分；仅演示用，禁止播报终场比分。",
+  "homeTeamAbbr": "RED",
+  "awayTeamAbbr": "BLU",
+  "homeJerseyColor": "red shirts and shorts（画面中的红色块/球员）",
+  "awayJerseyColor": "blue shirts and shorts（画面中的蓝色块/球员）",
+  "homeRoster": [
+    { "number": "7", "name": "Red Striker", "shortName": "Red #7", "role": "starter", "position": "FW", "notes": "主要带球向前的一方。" },
+    { "number": "10", "name": "Red Playmaker", "shortName": "Red #10", "role": "starter", "position": "CM" },
+    { "number": "1", "name": "Red Keeper", "shortName": "Keeper", "role": "starter", "position": "GK" }
+  ],
+  "awayRoster": [
+    { "number": "9", "name": "Blue Striker", "shortName": "Blue #9", "role": "starter", "position": "ST" },
+    { "number": "8", "name": "Blue Midfielder", "shortName": "Blue #8", "role": "starter", "position": "CM" },
+    { "number": "1", "name": "Blue Keeper", "shortName": "Keeper", "role": "starter", "position": "GK" }
+  ],
+  "playerIdentificationNotes": [
+    "画面可能是训练片段、业余对抗或合成演示，不要假设是某届世界杯真实转播。",
+    "球衣号码若看不清，用「红队前锋 / 蓝队中场 / 持球者 / 门将」等角色称呼，不要硬编球星姓名。",
+    "白球在绿地上滚动或传递时，优先描述触球、传球、带球、射门动作，而非臆测比分或终场结果。",
+    "红队穿红色，蓝队穿蓝色；不要把两队颜色说反。",
+    "若画面只有练球、无门将或无人墙，按训练赛语气解说，不要播报「世界杯决赛」等字样。"
+  ],
+  "broadcastNotes": [
+    "中文 meme 风格实时解说：短句、有节奏、像直播间弹幕口播，但保持足球术语准确。",
+    "每次只描述当前 1～2 秒可见动作：停球、拨球、传球、带球、射门、解围；不要连珠炮回顾整场比赛。",
+    "禁止播报未发生的进球、点球、红黄牌或终场比分；没有比分牌就不要报比分。",
+    "可适度加入网感用语（例如「这脚可以」「节奏起来了」），但不要低俗、不要人身攻击。",
+    "若画面静止或只有文字占位，诚实说「还在等比赛画面」，不要编造激烈对抗。",
+    "这是 WorldCupVoice 演示链路：用户从网盘导入 MP4 后由 AI 实时解说，语气应匹配「正在看的这一段」而非整届赛事。"
+  ],
+  "posterUrl": "/worldcup-final-poster.jpg",
+  "storyline": "2026 年 WorldCupVoice 演示：绿地上红蓝两队练球传球，白球在脚下转移。AI 只解说眼前这一小段，不绑定任何真实世界杯决赛剧情。"
+}

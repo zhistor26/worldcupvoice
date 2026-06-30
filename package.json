@@ -13,6 +13,7 @@
     "media-gateway:key": "node scripts/create-media-gateway-key.mjs",
     "stream:sample": "node scripts/push-sample-rtmp.mjs",
     "feed:local": "node scripts/publish-local-feed.mjs",
+    "generate:demo-video": "node scripts/generate-demo-kick-video.mjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "verify": "pnpm run lint && pnpm run typecheck && pnpm run build",
@@ -20,7 +21,8 @@
     "test:e2e:run": "bash scripts/e2e-run.sh",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "test:unit": "node --import tsx --test tests/unit/lazycat-netdisk-path.test.ts",
+    "test:unit": "node --import tsx --test tests/unit/lazycat-netdisk-path.test.ts tests/unit/commentary-match.test.ts",
+    "test:integration": "node --import tsx --test tests/integration/access-gate.test.ts tests/integration/agora-token-route.test.ts",
     "test:lazycat": "bash scripts/test-lazycat-contract.sh"
   },
   "dependencies": {
@@ -44,6 +46,7 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@playwright/test": "1.52.0",
     "@types/node": "^22.10.6",
     "@types/react": "^19.0.0",

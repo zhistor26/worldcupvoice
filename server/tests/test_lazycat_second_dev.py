@@ -1,5 +1,9 @@
 """Contract tests for LazyCat second-dev fixtures (M0)."""
 
+from pathlib import Path
+
+import yaml
+
 from app.lazycat_packaging import (
     REQUIRED_DEPLOY_PARAM_IDS,
     REQUIRED_PACKAGE_PERMISSIONS,
@@ -44,8 +48,11 @@ def test_manifest_reference_declares_web_and_agent():
 
 def test_build_reference_lists_images():
     data = _load_fixture("lzc-build.reference.yml")
-    images = data.get("images") or []
-    names = {img.get("name") for img in images if isinstance(img, dict)}
+    images = data.get("images") or {}
+    if isinstance(images, dict):
+        names = set(images.keys())
+    else:
+        names = {img.get("name") for img in images if isinstance(img, dict)}
     assert {"web", "agent"} <= names
 
 
@@ -70,3 +77,18 @@ def test_root_package_matches_contract():
 def test_root_deploy_params_matches_contract():
     data = load_project_deploy_params()
     assert REQUIRED_DEPLOY_PARAM_IDS <= deploy_param_ids(data)
+
+
+def test_root_build_has_lazycat_build_args():
+    """TC-FIX-01: web build_args include M1 LazyCat public env keys."""
+    root = Path(__file__).resolve().parents[2]
+    data = yaml.safe_load((root / "lzc-build.yml").read_text(encoding="utf-8"))
+    web = (data.get("images") or {}).get("web") or {}
+    build_args = web.get("build_args") or {}
+    required = {
+        "NEXT_PUBLIC_LAZYCAT_DEPLOYED",
+        "NEXT_PUBLIC_REQUIRE_ACCESS_PASSWORD",
+        "NEXT_PUBLIC_AGORA_APP_ID",
+        "NEXT_AGORA_APP_CERTIFICATE",
+    }
+    assert required <= set(build_args.keys())

@@ -5,10 +5,11 @@ clip so the AI commentator can identify teams and players and call the action in
 context. This is metadata only — it is sent to the model as a prompt, not shown
 to viewers.
 
-> ⚠️ **You must fill this in to match YOUR video.** The bundled
-> [`argentina-france-2022-final.json`](./argentina-france-2022-final.json) is an
-> **example** for our test clip. If you stream a different match, the rosters
-> and kit colors here will be wrong and the AI will misname players.
+**Default booth match (2026 demo):** [`worldcup-demo-2026.json`](./worldcup-demo-2026.json)
+— generic red/blue kickaround, no real World Cup final binding. Pair with
+`samples/worldcupvoice-demo-kick.mp4` (`node scripts/generate-demo-kick-video.mjs`).
+
+Legacy example (2022 final metadata only): [`argentina-france-2022-final.json`](./argentina-france-2022-final.json).
 
 ## Add your own match
 

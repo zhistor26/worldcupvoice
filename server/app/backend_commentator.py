@@ -10,7 +10,17 @@ import re
 import threading
 import time
 from types import SimpleNamespace
-import audioop
+try:
+    import audioop
+except ModuleNotFoundError:  # pragma: no cover - Python 3.13+ removed stdlib audioop
+    try:
+        import audioop_lts  # noqa: F401 - registers compatibility shim
+    except ModuleNotFoundError as exc:
+        raise ModuleNotFoundError(
+            "audioop is unavailable. Install server requirements "
+            "(pip install audioop-lts on Python 3.13+)."
+        ) from exc
+    import audioop
 
 import httpx
 from agora_agent.agentkit.token import ROLE_PUBLISHER, generate_rtc_token
@@ -28,6 +38,26 @@ _DEV_TEST_FEED_LINES = (
     "测试画面已锁定，这彩条比部分后卫的站位还整齐。",
     "信号源在线，直播间待命，就等正式开球了！",
     "导播台确认：画面通路畅通，解说席已就位！",
+)
+
+_LIVE_DEMO_FALLBACK_LINES = (
+    "绿地上有传导，球员们在中圈附近慢慢找节奏。",
+    "这脚横传很稳，看看下一脚能不能提速。",
+    "持球者在观察队友跑位，场上节奏还在试探阶段。",
+    "边路有人前插，中路正在尝试把球送出去。",
+    "防守队形在往后收，进攻方继续在前场控球。",
+    "一脚短传，队友接应很及时，配合还在磨合。",
+    "球在脚下转移，双方都在找空档。",
+    "这脚触球很干净，看看能不能打出配合。",
+)
+
+_DEMO_MATCH_HINTS = (
+    "演示",
+    "demo",
+    "训练",
+    "练球",
+    "非正式",
+    "worldcupvoice",
 )
 
 
@@ -90,6 +120,26 @@ def _mimo_auth_headers(api_key: str) -> dict[str, str]:
         "api-key": api_key,
         "Content-Type": "application/json",
     }
+
+
+def _vision_model_description(settings: Settings) -> str:
+    if settings.vision_provider == "mimo":
+        return settings.mimo_vision_model
+    return settings.openai_vision_model
+
+
+def _is_demo_match_context(match: MatchContext | None) -> bool:
+    if match is None:
+        return False
+    parts: list[str] = [
+        match.title or "",
+        match.competition or "",
+        match.storyline or "",
+        *(match.broadcastNotes or []),
+        *(match.playerIdentificationNotes or []),
+    ]
+    blob = " ".join(parts).lower()
+    return any(hint in blob for hint in _DEMO_MATCH_HINTS)
 
 
 def _extract_chat_completion_text(payload: dict) -> str:
@@ -281,9 +331,11 @@ def _build_visual_prompt(
             "持球推进、盘带、传球、斜传、传中、射门、扑救、解围、逼抢、反击、"
             "防线移动、庆祝或球员重新组织。快节奏时短句，发展中的进攻可以稍长，"
             "通常 8 到 24 个汉字，最多一句。\n"
-            "只要画面里能看清比赛、球员、球场或球权区域，就给出有依据的解说。"
-            "只有在最新画面不可读、没有足球动作、或明显是静态暂停/纯观众镜头时，"
-            "才只返回 NO_CALL。\n"
+            "只要画面里能看见球场、草地、球员、足球、队服颜色或任何练球/比赛活动，"
+            "就必须给出有依据的简短解说。俯拍远景、训练赛、慢节奏传带也算可解说的动作，"
+            "不要因镜头远、节奏慢或看不清球衣号码而返回 NO_CALL。"
+            "只有在最新画面完全黑屏、严重花屏不可读、或明显是静止 logo/纯文字占位"
+            "且无任何球员与足球时，才只返回 NO_CALL。\n"
             "写之前先检查持球人、传球人、射门人、门将和最近防守人的球衣号码。"
             "如果号码、球衣颜色和阵容信息能对应，就用球员短名；看不清号码时，"
             "用位置或角色描述，不要编球员名。\n"
@@ -1178,10 +1230,11 @@ class BackendVisionCommentator:
             )
             self._audio_pacer.start()
             logger.info(
-                "Started backend AI commentator channel=%s uid=%s vision_model=%s tts_model=%s audio_tick_ms=%s",
+                "Started backend AI commentator channel=%s uid=%s vision_provider=%s vision_model=%s tts_model=%s audio_tick_ms=%s",
                 self._channel_name,
                 self._agent_uid,
-                self._settings.openai_vision_model,
+                self._settings.vision_provider,
+                _vision_model_description(self._settings),
                 self._tts_description(),
                 self._audio_pacer.consume_interval_ms,
             )
@@ -1278,6 +1331,13 @@ class BackendVisionCommentator:
         self._dev_fallback_index += 1
         return line
 
+    def _next_live_demo_fallback_line(self) -> str:
+        line = _LIVE_DEMO_FALLBACK_LINES[
+            self._dev_fallback_index % len(_LIVE_DEMO_FALLBACK_LINES)
+        ]
+        self._dev_fallback_index += 1
+        return line
+
     async def _commentary_from_latest_frames(self, connection: object) -> None:
         if self._vision_rate_limit_resume_at > time.monotonic():
             return
@@ -1297,6 +1357,17 @@ class BackendVisionCommentator:
                 if self._settings.commentary_dev_test_feed:
                     text = self._next_dev_test_feed_line()
                     logger.info("Using dev test-feed fallback commentary: %s", text)
+                elif (
+                    _is_demo_match_context(self._match_context)
+                    and self._profile
+                    and self._profile.language.startswith("zh")
+                ):
+                    text = self._next_live_demo_fallback_line()
+                    logger.info(
+                        "Using live demo fallback after NO_CALL channel=%s: %s",
+                        self._channel_name,
+                        text,
+                    )
                 else:
                     return
             if _is_repetitive_commentary(

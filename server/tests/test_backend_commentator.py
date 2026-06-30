@@ -1,5 +1,6 @@
 import asyncio
 import json
+import time
 import pytest
 
 from app.backend_commentator import (
@@ -10,12 +11,14 @@ from app.backend_commentator import (
     _build_visual_prompt,
     _comfort_noise_frame,
     _extract_response_text,
+    _is_demo_match_context,
     _is_no_call,
     _is_repetitive_commentary,
     _resample_pcm_mono,
     _sample_rate_from_pcm_output_format,
     _transcript_payload,
     _trim_pcm_to_millisecond_boundary,
+    _vision_model_description,
 )
 from app.commentator_profiles import resolve_commentator_profile
 from app.config import Settings
@@ -132,6 +135,7 @@ def test_visual_prompt_can_use_chinese_commentator_profile():
     assert "不要冒充真实公众人物本人" in prompt
     assert "通常 8 到 24 个汉字" in prompt
     assert "才只返回 NO_CALL" in prompt
+    assert "俯拍远景" in prompt
     assert "除非最新画面明确支持" in prompt
     assert "梅西中路带球推进。" in prompt
     assert "13.1 秒" in prompt
@@ -225,16 +229,70 @@ def test_no_call_detection_allows_model_to_stay_silent():
     assert _is_no_call("No call.")
 
 
-def test_repetitive_commentary_detection_blocks_same_action():
-    previous = ["Messi carries it toward the box."]
+def test_vision_model_description_reflects_provider():
+    mimo = Settings(
+        agora_app_id="app-id",
+        agora_app_certificate="app-cert",
+        vision_provider="mimo",
+        mimo_vision_model="mimo-v2.5",
+    )
+    openai = Settings(
+        agora_app_id="app-id",
+        agora_app_certificate="app-cert",
+        vision_provider="openai",
+        openai_vision_model="gpt-5.4-mini",
+    )
+
+    assert _vision_model_description(mimo) == "mimo-v2.5"
+    assert _vision_model_description(openai) == "gpt-5.4-mini"
+
+
+def test_demo_match_context_detects_worldcupvoice_demo_metadata():
+    assert _is_demo_match_context(
+        MatchContext(
+            sport="football",
+            title="WorldCupVoice 踢球演示",
+            competition="WorldCupVoice 足球演示（非正式比赛）",
+            venue="训练场",
+            homeTeam="Demo Red",
+            awayTeam="Demo Blue",
+            storyline="2026 年 WorldCupVoice 演示",
+            broadcastNotes=["这是 WorldCupVoice 演示链路"],
+        )
+    )
+    assert not _is_demo_match_context(
+        MatchContext(
+            sport="football",
+            title="Argentina vs France",
+            competition="FIFA World Cup Qatar 2022 - Final",
+            venue="Lusail Stadium",
+            homeTeam="Argentina",
+            awayTeam="France",
+            storyline="Mbappe leads France back late.",
+        )
+    )
+
+
+def test_repetitive_commentary_detection_blocks_exact_repeat_within_window():
+    last = "Messi carries it toward the box."
 
     assert _is_repetitive_commentary(
-        "Messi carries toward the box.",
-        previous,
+        last,
+        [],
+        last_spoken_text=last,
+        last_spoken_monotonic=time.monotonic(),
     )
     assert not _is_repetitive_commentary(
         "Mbappe breaks down the left.",
-        previous,
+        [],
+        last_spoken_text=last,
+        last_spoken_monotonic=time.monotonic(),
+    )
+    assert not _is_repetitive_commentary(
+        last,
+        [],
+        last_spoken_text=last,
+        last_spoken_monotonic=time.monotonic() - 10.0,
     )
 
 
@@ -646,7 +704,7 @@ async def test_commentary_publishes_transcript_before_audio():
         events.append("tts")
         return b"x" * int(24000 * 1 * 2 * 120 / 1000)
 
-    async def publish_transcript(_connection: object, text: str) -> None:
+    async def publish_transcript(_connection: object, text: str, **kwargs: object) -> None:
         assert text == "Messi drives into space."
         events.append("transcript")
 
@@ -665,9 +723,70 @@ async def test_commentary_publishes_transcript_before_audio():
 
     await commentator._commentary_from_latest_frames(object())
 
-    # Transcript is published before audio synthesis so the text appears
-    # immediately while audio is still being produced.
-    assert events == ["describe", "transcript", "tts", "audio"]
+    assert events[0] == "describe"
+    tts_idx = events.index("tts")
+    audio_idx = events.index("audio")
+    assert events.index("transcript") < tts_idx < audio_idx
+    assert events.count("transcript") == 2
+
+
+@pytest.mark.asyncio
+async def test_no_call_uses_live_demo_fallback_for_demo_match():
+    profile = resolve_commentator_profile("zh-cn-fish-meme")
+    commentator = BackendVisionCommentator(
+        settings=Settings(
+            agora_app_id="app-id",
+            agora_app_certificate="app-cert",
+            vision_provider="mimo",
+            mimo_api_key="mimo-key",
+        ),
+        channel_name="channel",
+        agent_uid=123456,
+        match_context=MatchContext(
+            sport="football",
+            title="WorldCupVoice 踢球演示",
+            competition="WorldCupVoice 足球演示（非正式比赛）",
+            venue="训练场",
+            homeTeam="Demo Red",
+            awayTeam="Demo Blue",
+            storyline="2026 年 WorldCupVoice 演示",
+        ),
+        media_uid=234567,
+        profile=profile,
+    )
+    spoken: list[str] = []
+
+    async def describe(_samples: list[FrameSnapshot]) -> str:
+        return "NO_CALL"
+
+    async def publish_transcript(_connection: object, text: str, **kwargs: object) -> None:
+        spoken.append(text)
+
+    async def buffered_synth(_connection: object, text: str) -> tuple[int, int, int, int]:
+        spoken.append(text)
+        return 0, 0, 0, 0
+
+    commentator._describe_frames = describe  # type: ignore[method-assign]
+    commentator._publish_transcript = publish_transcript  # type: ignore[method-assign]
+    commentator._buffered_synth_and_publish = buffered_synth  # type: ignore[method-assign]
+    commentator._wait_for_audio_drain = lambda **kwargs: asyncio.sleep(0)  # type: ignore[method-assign,return-value]
+    await commentator._store_frame(
+        FrameSnapshot(video_time=1.0, captured_at=1.0, image_base64="frame")
+    )
+
+    await commentator._commentary_from_latest_frames(object())
+
+    assert spoken
+    assert spoken[0] in (
+        "绿地上有传导，球员们在中圈附近慢慢找节奏。",
+        "这脚横传很稳，看看下一脚能不能提速。",
+        "持球者在观察队友跑位，场上节奏还在试探阶段。",
+        "边路有人前插，中路正在尝试把球送出去。",
+        "防守队形在往后收，进攻方继续在前场控球。",
+        "一脚短传，队友接应很及时，配合还在磨合。",
+        "球在脚下转移，双方都在找空档。",
+        "这脚触球很干净，看看能不能打出配合。",
+    )
 
 
 def test_commentator_stats_defaults_to_zero():

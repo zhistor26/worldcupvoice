@@ -5,6 +5,19 @@ source** for development. It is not played by the product UI — the script push
 it through Agora Media Gateway so the app and AI commentator receive it as live
 Agora RTC video.
 
+## Synthetic demo clip (WorldCupVoice 2026 kickaround)
+
+Aligned with `data/matches/worldcup-demo-2026.json` (red vs blue, green pitch):
+
+```bash
+npm run generate:demo-video
+# → samples/worldcupvoice-demo-kick.mp4 (~45s, 1280x720, H.264)
+```
+
+Upload this MP4 to LazyCat Drive, then use **从网盘选择录像** in Live Booth.
+Requires **ffmpeg** on PATH, or devDependency `@ffmpeg-installer/ffmpeg`
+(`npm install` in repo root — already used by `generate:demo-video`).
+
 ## Bundled dev clip (Mixkit, royalty-free)
 
 For quick AI commentary testing without hunting for footage:
